@@ -1,0 +1,110 @@
+#!/usr/local/bin/ruby
+=begin
+# Useful for assembing couchdb design documents
+# @see http://books.couchdb.org/relax/design-documents/design-documents
+=end
+
+require 'couch_tools'
+
+ACTIONS = {
+  :"save-design-doc" => :save_design_doc,
+  :"get-doc" => :get_doc
+}
+
+def usage_message
+  <<EOS
+#{$0}
+
+Options: 
+
+  save-design-doc:
+    path /path/on/fs
+    url http://url.of.the/db/_design/doc
+
+  get-doc:
+    url http://url.of.the/db/a/doc
+
+EOS
+end
+
+def parse_args(argv)
+  ret = {}
+
+  ret[:action] = argv[0].to_sym
+
+  argv.each do |arg|
+    k,v = arg.split(/[=:\s]/,2)
+    ret[k.to_sym] = v || k
+  end
+  ret
+end
+
+def main
+  args = parse_args(ARGV)
+
+  if args[:"-h"] 
+    puts usage_message
+    exit
+  end
+
+  action = ACTIONS[args[:action]]
+  
+  unless action
+    puts "Unknown action: %s"%args[:action] #"]
+    puts usage_message
+    exit
+  end
+
+  self.__send__(action, args)
+end
+
+def save_design_doc(args)
+  d = CouchTools::DesignDocument.new(args[:path], args[:url])
+  d.save
+
+  d.to_json
+end
+
+puts main
+
+=begin
+require 'rubygems'
+require 'json'
+
+
+
+def main
+  args = parse_args(ARGV)
+  return usage_message if args[:"-h"]
+
+  DESIGN_DOC_FMT.each do |member|
+    val = args[member]
+    DESIGN_DOC[member] = insert(val) if val 
+  end
+
+  DESIGN_DOC.to_json
+end
+
+
+def insert(val)
+  return unless val
+  ret = val
+
+  if File.directory?(File.join(".",val))
+    ret = {}
+
+    Dir.glob(File.join(val,"**")) do |file_name|
+      key = File.basename(file_name).split('.').first
+      ret[key] = insert(file_name)
+    end
+  elsif File.file?(val)
+    f = File.new(val)
+    ret = f.read
+    f.close
+  end
+
+  ret
+end
+
+puts main
+=end
