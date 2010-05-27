@@ -3,6 +3,10 @@ require 'pathname'
 
 module CouchTools
   class Document
+    attr_reader :url
+
+    include CouchTools::RestResource
+
     def initialize(url)
       @url = CouchTools::Url.parse(url)
       @ostruct = nil
@@ -12,13 +16,13 @@ module CouchTools
 
     def read
       begin
-        json = CouchTools::HTTP.get(@url)
+        json = CouchTools::HTTP.get(url)
         @ostruct = OpenStruct.new(JSON.parse(json))
       rescue Net::HTTPServerException
         case $!.response
         when Net::HTTPNotFound
           @ostruct = OpenStruct.new({})
-          self._id = @url.doc
+          self._id = url.doc
           @new = true
         else
           raise $!
@@ -28,16 +32,15 @@ module CouchTools
 
     def save
       begin
-        res = CouchTools::HTTP.put(@url,self.to_json)
-        @write_dirty = false
-
+        res = self.put(self.to_json)
         res = OpenStruct.new(JSON.parse(res))
         self._rev = res.rev if res.ok
       end
     end
 
+    # override CouchTools::RestResource
     def delete
-      delete_url = @url.to_s + "?rev=%s"%self._rev
+      delete_url = url.to_s + "?rev=%s"%self._rev
       CouchTools::HTTP.delete(delete_url)
     end
 

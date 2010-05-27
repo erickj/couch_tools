@@ -4,7 +4,7 @@ module CouchTools
   class Url
     class << self
       def parse(url)
-        return url if url.respond_to?(:db)
+        return url if url.instance_of?(self)
 
         obj = URI.parse(url)
         self.new(obj)
@@ -13,16 +13,23 @@ module CouchTools
 
     def initialize(url)
       @url = url
-      @path_parts = @url.path.gsub(/^\//,'').split("/")
+    end
+
+    def clone
+      Url.parse(self.to_s)
+    end
+
+    def parts
+      @url.path.gsub(/^\//,'').split("/")
     end
 
     def db
-      @path_parts[0]
+      parts.first
     end
 
     def doc
-      ret = @path_parts[1]
-      ret = [ret,@path_parts[2]].join("/") if ret && ret.match(/^_/)
+      ret = parts[1]
+      ret = [ret,parts[2]].join("/") if ret && ret.match(/^_/)
       ret
     end
 

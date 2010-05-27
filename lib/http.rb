@@ -1,29 +1,52 @@
 require 'net/http'
 
 module CouchTools
+  module RestResource
+    class << self
+      def included(base)
+        raise NotImplementedError unless base.instance_methods.include?(:url.to_s)
+        base.__send__(:include, InstanceMethods)
+      end
+    end
+
+    module InstanceMethods
+      def get(*params)
+        CouchTools::HTTP.get(self.url,*params)
+      end
+
+      def put(data,*params)
+        CouchTools::HTTP.put(self.url,data,*params)
+      end
+
+      def delete(*params)
+        CouchTools::HTTP.delete(self.url,*params)
+      end
+    end
+  end
+
   class HTTP
     class << self
-      def get(url)
+      def get(url,*params)
         url = CouchTools::Url.parse(url)
-        req = Net::HTTP::Get.new(url.path)
+        req = Net::HTTP::Get.new(url.to_s)
         make_request(req,url)
       end
 
-      def put(url,data)
+      def put(url,data,*params)
         url = CouchTools::Url.parse(url)
-        req = Net::HTTP::Put.new(url.path)
+        req = Net::HTTP::Put.new(url.to_s)
         req.body = data
         make_request(req,url)
       end
 
-      def delete(url)
+      def delete(url,*params)
         url = CouchTools::Url.parse(url)
-        req = Net::HTTP::Delete.new(url.path)
+        req = Net::HTTP::Delete.new(url.to_s)
         req
-        make_request(req,url)
+        make_request(req,url,*params)
       end
 
-      def make_request(req,url)
+      def make_request(req,url,*params)
         req.basic_auth(url.user,url.password) if url.user && url.password
 
         res = Net::HTTP.new(url.host,url.port).start do |http|

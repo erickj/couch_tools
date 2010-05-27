@@ -1,28 +1,38 @@
 #!/usr/local/bin/ruby
-=begin
-# Useful for assembing couchdb design documents
-# @see http://books.couchdb.org/relax/design-documents/design-documents
-=end
-
+$:.unshift File.dirname(__FILE__)
 require 'couch_tools'
 
 ACTIONS = {
   :"save-design-doc" => :save_design_doc,
-  :"get-doc" => :get_doc
+  :"get-resource" => :get_resource,
+  :"get-dbs" => :get_dbs,
+  :"delete-resource" => :delete_resource,
 }
 
 def usage_message
+  name = File.basename(__FILE__)
+
   <<EOS
-#{$0}
+# #{name}
+#
+# Useful for assembing couchdb design documents
+# @see http://books.couchdb.org/relax/design-documents/design-documents
 
 Options: 
 
-\t#{$0} save-design-doc \\
-\t\tpath /path/on/fs \\
-\t\turl http://url.of.the/db/_design/doc
+\t#{name} save-design-doc \\
+\t\tpath=/path/on/fs \\
+\t\turl=http://url.of.the/db/_design/doc
 
-\t#{$0} get-doc \\
-\t\turl http://url.of.the/db/a/doc
+\t#{name} get-resource \\
+\t\turl=http://url.of.the/resource
+
+\t#{name} get-dbs \\
+\t\thost=http://url.of.host
+
+\t#{name} delete-resource \\
+\t\t--force \\
+\t\turl=http://url.of.the/resource
 
 EOS
 end
@@ -65,9 +75,21 @@ def save_design_doc(args)
   d.to_json
 end
 
-def get_doc(args)
+def get_resource(args)
   d = CouchTools::Document.new(args[:url])
   d.to_json
 end
+
+def delete_resource(args)
+  d = CouchTools::Document.new(args[:url])
+
+  if !args[:"--force"]
+    puts d.to_json
+    print "\nDelete %s [y/n]? "%args[:url]
+    str = STDIN.gets
+    return unless str && str.match(/^y/i)
+  end
+  d.delete
+end  
 
 puts main
