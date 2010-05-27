@@ -17,12 +17,12 @@ def usage_message
 
 Options: 
 
-  save-design-doc:
-    path /path/on/fs
-    url http://url.of.the/db/_design/doc
+\t#{$0} save-design-doc \\
+\t\tpath /path/on/fs \\
+\t\turl http://url.of.the/db/_design/doc
 
-  get-doc:
-    url http://url.of.the/db/a/doc
+\t#{$0} get-doc \\
+\t\turl http://url.of.the/db/a/doc
 
 EOS
 end
@@ -30,7 +30,7 @@ end
 def parse_args(argv)
   ret = {}
 
-  ret[:action] = argv[0].to_sym
+  ret[:action] = argv[0] && argv[0].to_sym
 
   argv.each do |arg|
     k,v = arg.split(/[=:\s]/,2)
@@ -65,46 +65,9 @@ def save_design_doc(args)
   d.to_json
 end
 
-puts main
-
-=begin
-require 'rubygems'
-require 'json'
-
-
-
-def main
-  args = parse_args(ARGV)
-  return usage_message if args[:"-h"]
-
-  DESIGN_DOC_FMT.each do |member|
-    val = args[member]
-    DESIGN_DOC[member] = insert(val) if val 
-  end
-
-  DESIGN_DOC.to_json
-end
-
-
-def insert(val)
-  return unless val
-  ret = val
-
-  if File.directory?(File.join(".",val))
-    ret = {}
-
-    Dir.glob(File.join(val,"**")) do |file_name|
-      key = File.basename(file_name).split('.').first
-      ret[key] = insert(file_name)
-    end
-  elsif File.file?(val)
-    f = File.new(val)
-    ret = f.read
-    f.close
-  end
-
-  ret
+def get_doc(args)
+  d = CouchTools::Document.new(args[:url])
+  d.to_json
 end
 
 puts main
-=end
