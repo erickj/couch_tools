@@ -7,6 +7,7 @@ ACTIONS = {
   :"get-resource" => :get_resource,
   :"get-dbs" => :get_dbs,
   :"delete-resource" => :delete_resource,
+  :"put-resource" => :put_resource
 }
 
 def usage_message
@@ -21,6 +22,7 @@ def usage_message
 Options: 
 
 \t#{name} save-design-doc \\
+\t\tnosave=[true|false] \\
 \t\tpath=/path/on/fs \\
 \t\turl=http://url.of.the/db/_design/doc
 
@@ -34,6 +36,10 @@ Options:
 \t\t--force \\
 \t\turl=http://url.of.the/resource
 
+\t#{name} put-resource \\
+\t\turl=http://url.of.the/resource
+\t\tdata={some: json-data}
+
 EOS
 end
 
@@ -44,7 +50,9 @@ def parse_args(argv)
 
   argv.each do |arg|
     k,v = arg.split(/[=:\s]/,2)
-    ret[k.to_sym] = v || k
+    v = (v == "true") if ["true","false"].include?(v)
+
+    ret[k.to_sym] = v.nil? ? k : v
   end
   ret
 end
@@ -70,8 +78,7 @@ end
 
 def save_design_doc(args)
   d = CouchTools::DesignDocument.new(args[:path], args[:url])
-  d.save
-
+  d.save unless args[:nosave]
   d.to_json
 end
 
@@ -81,15 +88,27 @@ def get_resource(args)
 end
 
 def delete_resource(args)
-  d = CouchTools::Document.new(args[:url])
+  url = CouchTools::Url.parse(args[:url])
+  raise ArgumentError, "bad URL" unless url
+
+  res = url.doc ? CouchTools::Document.new(url) : CouchTools::Database.new(url)
 
   if !args[:"--force"]
-    puts d.to_json
+    puts res.to_json
     print "\nDelete %s [y/n]? "%args[:url]
     str = STDIN.gets
     return unless str && str.match(/^y/i)
   end
-  d.delete
+  res.delete
 end  
+
+def put_resource(args)
+  url = CouchTools::Url.parse(args[:url])
+  raise ArgumentError, "bad URL" unless url
+
+  res = url.doc ? CouchTools::Document.new(url) : CouchTools::Database.new(url)
+
+  res.put(args[:data])
+end
 
 puts main

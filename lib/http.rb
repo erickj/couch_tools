@@ -21,6 +21,10 @@ module CouchTools
       def delete(*params)
         CouchTools::HTTP.delete(self.url,*params)
       end
+
+      def to_json
+        self.get.to_s
+      end
     end
   end
 
@@ -35,14 +39,13 @@ module CouchTools
       def put(url,data,*params)
         url = CouchTools::Url.parse(url)
         req = Net::HTTP::Put.new(url.to_s)
-        req.body = data
+        req.body = data if data
         make_request(req,url)
       end
 
       def delete(url,*params)
         url = CouchTools::Url.parse(url)
         req = Net::HTTP::Delete.new(url.to_s)
-        req
         make_request(req,url,*params)
       end
 

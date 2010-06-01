@@ -82,14 +82,22 @@ module CouchTools
     def import_from_path(path)
       path = Pathname.new(path)
       DESIGN_DOC_PATHS.each do |part|
-        self[part] = self.import(path.join(part.to_s)) if part
+        tmp_paths = [path.join(part.to_s),path.join(part.to_s + ".js")]
+        res = nil
+
+        tmp_paths.each do |tmp_path|
+          res = self.import(tmp_path) unless res
+        end
+
+        self[part] = res if res
       end
     end
 
     def import(path)
       return unless path
       return if path.to_s.match(/~$/)
-      
+      ret = nil
+
       if File.directory?(path)
         ret = {}
 
@@ -103,6 +111,18 @@ module CouchTools
         f = File.new(path)
         ret = f.read
         f.close
+
+        ret.gsub!(/(\/\/[\s]*\!code (.*))$/) do |match|
+          retSub = nil
+          replacementPath = (File.dirname(path) + "/" + $2).strip
+
+          if File.file?(replacementPath)
+            fSub = File.new(replacementPath)
+            retSub = fSub.read
+            fSub.close
+          end
+          retSub
+        end
       end
 
       ret
