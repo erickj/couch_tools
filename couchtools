@@ -22,7 +22,7 @@ def usage_message
 Options: 
 
 \t#{name} save-design-doc \\
-\t\tnosave=[true|false] \\
+\t\t--nosave \\
 \t\tpath=/path/on/fs \\
 \t\turl=http://url.of.the/db/_design/doc
 
@@ -78,7 +78,7 @@ end
 
 def save_design_doc(args)
   d = CouchTools::DesignDocument.new(args[:path], args[:url])
-  d.save unless args[:nosave]
+  d.save unless args[:"--nosave"]
   d.to_json
 end
 

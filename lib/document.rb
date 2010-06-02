@@ -73,9 +73,10 @@ module CouchTools
                         # :lib,
                        ]
 
-    def initialize(path,url)
+    def initialize(path,url,language="javascript")
       super(url)
       @path = path
+      self[:language] = language
       import_from_path(path)
     end
 
@@ -109,7 +110,7 @@ module CouchTools
         end
       elsif File.file?(path)
         f = File.new(path)
-        ret = f.read
+        ret = f.read.strip
         f.close
 
         ret.gsub!(/(\/\/[\s]*\!code (.*))$/) do |match|
